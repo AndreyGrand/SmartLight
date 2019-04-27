@@ -11,14 +11,15 @@
 
 #define Relay_Light 2//(1<<PB2) //жёлтый
 #define LED_B 1//(1<<PB1) //светодиод голубой
+#define LED_G 4
 #define PIR   3//датчик движения
 #define BTN_INC 0
 #define PHOTO_SENSOR_PIN 5 //PIN5 mapped on analog ADC0
 #define PHOTO_SENSOR_READ 0 //analog ADC0
 
-#define BTN_INC_TIME 8000
+#define BTN_INC_TIME TIMEOUT_PIR * 2
 #define calibrationTime 14 //секунд для инициализации таймера;
-#define TIMEOUT_PIR 1000
+#define TIMEOUT_PIR 200
 
 // AVR ports
 #define BTN_INC_AVR (1<<PB0)
@@ -32,7 +33,7 @@ volatile boolean movementOn = false;
 void initInterrupt(void)
 {
   GIMSK |= (1 << PCIE);   // pin change interrupt enable
-  PCMSK |= PIR_AVR; // pin change interrupt enabled for PCINT4
+  PCMSK |= (PIR_AVR); // pin change interrupt enabled for PCINT4
   //BTN_INC_AVR |
 }
 unsigned long startTime = 0;
@@ -52,18 +53,21 @@ void setup()
   //DDRB |= (LED_B | Relay_Light) ;
   pinMode(Relay_Light, OUTPUT);
   pinMode(LED_B, OUTPUT);
+  pinMode(LED_G, OUTPUT);
   pinMode(PIR, INPUT);
-
+  digitalWrite(PIR, HIGH);
+  
   pinMode(BTN_INC, INPUT);
   digitalWrite(BTN_INC, HIGH);
 
   pinMode(PHOTO_SENSOR_PIN, INPUT);
   //digitalWrite(PHOTO_SENSOR_PIN, HIGH);
-
+/*
   for (int i = 0; i < calibrationTime; i++) {
     digitalWrite(LED_B, !digitalRead(LED_B));
     delay(1000);
   }
+  */
   initInterrupt();
 }
 
@@ -75,7 +79,7 @@ void loop()
   if (! movementOn ) {
     return;
   }
-
+ digitalWrite(LED_G, incButtonClicked);
   if (!activatedLight) {
     int photo = analogRead(PHOTO_SENSOR_READ);
     if (photo > 300) {
@@ -99,6 +103,7 @@ void loop()
     movementOn = false;
     delayBy = 0;
     activatedLight = false;
+    btnIncCount = 0;
   }
 
 
@@ -111,8 +116,9 @@ void loop()
       btnIncCount--;
     }
 
-    if (btnIncCount == 5) {
+    if (btnIncCount == 5 ) {
       incButtonClicked = true;
+      digitalWrite(LED_B, !digitalRead(LED_B));
       btnIncCount = 0;
     }
   }
