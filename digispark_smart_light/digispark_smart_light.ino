@@ -7,7 +7,8 @@
 */
 
 #include <avr/io.h>
-
+#include <avr/sleep.h>
+#include <avr/interrupt.h>
 
 #define Relay_Light 2//(1<<PB2) //жёлтый
 #define LED_B 1//(1<<PB1) //светодиод голубой
@@ -19,7 +20,7 @@
 
 #define BTN_INC_TIME TIMEOUT_PIR * 2
 #define calibrationTime 14 //секунд для инициализации таймера;
-#define TIMEOUT_PIR 200
+#define TIMEOUT_PIR 8000
 
 // AVR ports
 #define BTN_INC_AVR (1<<PB0)
@@ -51,35 +52,50 @@ ISR(PCINT0_vect)
 void setup()
 {
   //DDRB |= (LED_B | Relay_Light) ;
-  pinMode(Relay_Light, OUTPUT);
-  pinMode(LED_B, OUTPUT);
-  pinMode(LED_G, OUTPUT);
-  pinMode(PIR, INPUT);
-  digitalWrite(PIR, HIGH);
-  
-  pinMode(BTN_INC, INPUT);
-  digitalWrite(BTN_INC, HIGH);
 
-  pinMode(PHOTO_SENSOR_PIN, INPUT);
-  //digitalWrite(PHOTO_SENSOR_PIN, HIGH);
-/*
-  for (int i = 0; i < calibrationTime; i++) {
-    digitalWrite(LED_B, !digitalRead(LED_B));
-    delay(1000);
-  }
-  */
+  pinMode(PIR, INPUT);
+  //digitalWrite(PIR, HIGH);
+  initPins();
+  
+    for (int i = 0; i < calibrationTime; i++) {
+      digitalWrite(LED_B, !digitalRead(LED_B));
+      delay(1000);
+    }
+  
   initInterrupt();
 }
 
 volatile bool activatedLight = false;
 char btnIncCount = 0;
 bool incButtonClicked = false;
+void sleep() {
+  teardownPins();
+  //   GIMSK |= _BV(PCIE);                     // Enable Pin Change Interrupts
+  //   PCMSK |= _BV(PCINT3);                   // Use PB3 as interrupt pin
+  ADCSRA &= ~_BV(ADEN);                   // ADC off
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);    // replaces above statement
+
+  sleep_enable();                         // Sets the Sleep Enable bit in the MCUCR Register (SE BIT)
+  sei();                                  // Enable interrupts
+  sleep_cpu();                            // sleep
+
+  cli();                                  // Disable interrupts
+  // PCMSK &= ~_BV(PCINT3);                  // Turn off PB3 as interrupt pin
+  sleep_disable();                        // Clear SE bit
+  ADCSRA |= _BV(ADEN);                    // ADC on
+
+  sei();                                  // Enable interrupts
+  initPins();
+} // sleep
+
+
 void loop()
 {
   if (! movementOn ) {
+    sleep();
     return;
   }
- digitalWrite(LED_G, incButtonClicked);
+  digitalWrite(LED_G, incButtonClicked);
   if (!activatedLight) {
     int photo = analogRead(PHOTO_SENSOR_READ);
     if (photo > 300) {
@@ -122,5 +138,27 @@ void loop()
       btnIncCount = 0;
     }
   }
+}
+void initPins() {
+  pinMode(Relay_Light, OUTPUT);
+  pinMode(LED_B, OUTPUT);
+  pinMode(LED_G, OUTPUT);
+  pinMode(BTN_INC, INPUT);
+  digitalWrite(BTN_INC, HIGH);
 
+  pinMode(PHOTO_SENSOR_PIN, INPUT);
+}
+
+void teardownPins()
+{
+  pinMode(0, OUTPUT);
+  digitalWrite(0, LOW);
+  pinMode(1, OUTPUT);
+  digitalWrite(1, LOW);
+  pinMode(A1, INPUT);
+  analogWrite(A1, 0);
+  pinMode(A2, INPUT);
+  analogWrite(A2, 0);
+  // pinMode(A3,INPUT);
+  // analogWrite(A3, 0);
 }
