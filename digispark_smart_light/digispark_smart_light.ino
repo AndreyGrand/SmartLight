@@ -3,6 +3,7 @@
 
    Created: 4/12/2019 10:20:22 PM
    Author : Gerankin-EIS
+   C:\Users\Gerankin-EIS\AppData\Local\Temp
 */
 
 #include <avr/io.h>
@@ -32,21 +33,18 @@ void initInterrupt(void)
 {
   GIMSK |= (1 << PCIE);   // pin change interrupt enable
   PCMSK |= PIR_AVR; // pin change interrupt enabled for PCINT4
-//BTN_INC_AVR |
+  //BTN_INC_AVR |
 }
 unsigned long startTime = 0;
 ISR(PCINT0_vect)
 {
-
- // if (!digitalRead(PIR)) {
-     
-    movementOn = true;
-    unsigned long tmp = millis() + TIMEOUT_PIR;
-    startTime = millis() ;
-    if (delayBy < tmp) {
-      delayBy = tmp;
-    }
- // }
+  digitalWrite(LED_B, !digitalRead(LED_B));
+  movementOn = true;
+  unsigned long tmp = millis() + TIMEOUT_PIR;
+  startTime = millis() ;
+  if (delayBy < tmp) {
+    delayBy = tmp;
+  }
 }
 
 void setup()
@@ -55,13 +53,13 @@ void setup()
   pinMode(Relay_Light, OUTPUT);
   pinMode(LED_B, OUTPUT);
   pinMode(PIR, INPUT);
-  
+
   pinMode(BTN_INC, INPUT);
   digitalWrite(BTN_INC, HIGH);
-  
+
   pinMode(PHOTO_SENSOR_PIN, INPUT);
-  digitalWrite(PHOTO_SENSOR_PIN, HIGH);
- 
+  //digitalWrite(PHOTO_SENSOR_PIN, HIGH);
+
   for (int i = 0; i < calibrationTime; i++) {
     digitalWrite(LED_B, !digitalRead(LED_B));
     delay(1000);
@@ -81,12 +79,12 @@ void loop()
   if (!activatedLight) {
     int photo = analogRead(PHOTO_SENSOR_READ);
     if (photo > 300) {
-    digitalWrite(Relay_Light, HIGH);
-    activatedLight = true;
-     }
-     else{
-       movementOn = false;
-     }
+      digitalWrite(Relay_Light, HIGH);
+      activatedLight = true;
+    }
+    else {
+      movementOn = false;
+    }
   }
 
   if (activatedLight && (millis() > delayBy)) {
@@ -96,14 +94,14 @@ void loop()
       incButtonClicked = false;
       return;
     }
-    
+
     digitalWrite(Relay_Light, LOW);
     movementOn = false;
     delayBy = 0;
     activatedLight = false;
   }
 
-  
+
   if (activatedLight) {
     bool pressed = digitalRead(BTN_INC) == LOW;
     if ( pressed && btnIncCount < 5) {
@@ -118,5 +116,5 @@ void loop()
       btnIncCount = 0;
     }
   }
-  
+
 }
