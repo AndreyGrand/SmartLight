@@ -12,15 +12,15 @@
 
 #define Relay_Light 2//(1<<PB2) //жёлтый
 #define LED_B 1//(1<<PB1) //светодиод голубой
-#define LED_G 4
+//#define LED_G 4
 #define PIR   3//датчик движения
 #define BTN_INC 0
-#define PHOTO_SENSOR_PIN 5 //PIN5 mapped on analog ADC0
-#define PHOTO_SENSOR_READ 0 //analog ADC0
+#define PHOTO_SENSOR_PIN 4 //PIN4 mapped on analog ADC2
+#define PHOTO_SENSOR_READ 2 //analog ADC2
 
 #define BTN_INC_TIME TIMEOUT_PIR * 2
 #define calibrationTime 14 //секунд для инициализации таймера;
-#define TIMEOUT_PIR 8000
+#define TIMEOUT_PIR 60000
 
 // AVR ports
 #define BTN_INC_AVR (1<<PB0)
@@ -55,6 +55,9 @@ void setup()
 
   pinMode(PIR, INPUT);
   //digitalWrite(PIR, HIGH);
+  pinMode(PHOTO_SENSOR_PIN, INPUT);
+  //digitalWrite(PHOTO_SENSOR_PIN, HIGH);
+  
   initPins();
   
     for (int i = 0; i < calibrationTime; i++) {
@@ -95,10 +98,10 @@ void loop()
     sleep();
     return;
   }
-  digitalWrite(LED_G, incButtonClicked);
+
   if (!activatedLight) {
     int photo = analogRead(PHOTO_SENSOR_READ);
-    if (photo > 300) {
+    if (photo > 100) {
       digitalWrite(Relay_Light, HIGH);
       activatedLight = true;
     }
@@ -142,11 +145,12 @@ void loop()
 void initPins() {
   pinMode(Relay_Light, OUTPUT);
   pinMode(LED_B, OUTPUT);
-  pinMode(LED_G, OUTPUT);
+//  pinMode(LED_G, OUTPUT);
   pinMode(BTN_INC, INPUT);
   digitalWrite(BTN_INC, HIGH);
 
   pinMode(PHOTO_SENSOR_PIN, INPUT);
+  //digitalWrite(PHOTO_SENSOR_PIN, HIGH);
 }
 
 void teardownPins()
@@ -157,8 +161,8 @@ void teardownPins()
   digitalWrite(1, LOW);
   pinMode(A1, INPUT);
   analogWrite(A1, 0);
-  pinMode(A2, INPUT);
-  analogWrite(A2, 0);
+ // pinMode(A2, INPUT);
+ // analogWrite(A2, 0);
   // pinMode(A3,INPUT);
   // analogWrite(A3, 0);
 }
